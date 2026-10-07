@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Richiesta Materiale Elettrico</title>
+  <style>
+    *{box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f7fa;margin:0;padding:20px;color:#333}
+    .container{max-width:1000px;margin:0 auto;background:#fff;padding:30px;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,.08)}
+    h1{color:#1a73e8;border-bottom:2px solid #1a73e8;padding-bottom:10px;margin-top:0}
+    h2{color:#555;font-size:17px;margin-top:25px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:15px;margin-bottom:20px}
+    .field{display:flex;flex-direction:column}
+    label{font-size:13px;font-weight:600;margin-bottom:5px;color:#555}
+    .req{color:#e53935}
+    input,select,textarea{padding:10px;border:1px solid #dadce0;border-radius:4px;font-size:14px;font-family:inherit}
+    input:focus,select:focus,textarea:focus{outline:none;border-color:#1a73e8;box-shadow:0 0 0 2px rgba(26,115,232,.2)}
+    textarea{resize:vertical;min-height:60px}
+    table{width:100%;border-collapse:collapse;margin-top:10px}
+    th{background:#1a73e8;color:#fff;padding:10px;text-align:left;font-size:13px}
+    td{padding:5px}
+    .materiali-table input,.materiali-table select{width:100%;padding:6px 8px;font-size:13px}
+    .btn{padding:10px 20px;border:none;border-radius:4px;cursor:pointer;font-size:14px;font-weight:500}
+    .btn-primary{background:#1a73e8;color:#fff}
+    .btn-primary:hover{background:#1557b0}
+    .btn-primary:disabled{background:#999;cursor:not-allowed}
+    .btn-secondary{background:#f1f3f4;color:#333}
+    .btn-danger{background:#fce8e6;color:#e53935;padding:6px 10px;font-size:12px}
+    .actions{margin-top:25px;display:flex;gap:10px;justify-content:flex-end}
+    .add-row{margin-top:10px;background:#e8f0fe;color:#1a73e8;padding:8px 14px}
+    .alert{padding:12px 16px;border-radius:4px;margin:15px 0;font-size:14px;display:none}
+    .alert.show{display:block}
+    .alert-success{background:#e6f4ea;color:#137333;border-left:4px solid #137333}
+    .alert-error{background:#fce8e6;color:#c5221f;border-left:4px solid #c5221f}
+    .loading{display:none;text-align:center;padding:20px}
+    .loading.show{display:block}
+    .spinner{border:3px solid #f3f3f3;border-top:3px solid #1a73e8;border-radius:50%;width:30px;height:30px;animation:spin 1s linear infinite;margin:0 auto}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .toast{position:fixed;top:30px;left:50%;transform:translateX(-50%) translateY(-120px);background:#1a1a18;color:#fff;padding:18px 32px;border-radius:10px;font-size:16px;font-weight:600;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,.25);transition:transform .4s cubic-bezier(.34,1.56,.64,1);display:flex;align-items:center;gap:12px;min-width:280px;justify-content:center}
+    .toast.show{transform:translateX(-50%) translateY(0)}
+    .toast-icon{font-size:24px}
+    .badge-sede{display:inline-block;background:#e8f0fe;color:#1a73e8;border-radius:12px;padding:2px 10px;font-size:12px;font-weight:600;margin-left:6px}
+    .badge-cantiere{display:inline-block;background:#fce8e6;color:#c5221f;border-radius:12px;padding:2px 10px;font-size:12px;font-weight:600;margin-left:6px}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:0">
+      <h1 style="margin:0">⚡ Richiesta Materiale Elettrico</h1>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <a href="mie-richieste.html" style="display:inline-flex;align-items:center;gap:8px;padding:10px 18px;background:#fff;color:#1a73e8;border:1px solid #1a73e8;border-radius:4px;text-decoration:none;font-size:14px;font-weight:500">
+          📋 Le mie richieste
+        </a>
+        <a href="procedure/" target="_blank" style="display:inline-flex;align-items:center;gap:8px;padding:10px 18px;background:#1a73e8;color:#fff;border-radius:4px;text-decoration:none;font-size:14px;font-weight:500">
+          📁 Procedure
+        </a>
+      </div>
+    </div>
+    <div id="alert" class="alert"></div>
+
+    <form id="form">
+      <h2>Dati commessa</h2>
+      <div class="grid">
+        <div class="field"><label>Commessa <span class="req">*</span></label><input type="text" id="commessa" required placeholder="es. 00227cen25" pattern="\d{5}cen\d{2}" maxlength="10" oninput="this.value=this.value.toLowerCase()" title="Formato richiesto: 5 numeri + cen + 2 numeri anno (es. 00227cen25)"></div>
+        <div class="field"><label>Cantiere / Ubicazione <span class="req">*</span></label><input type="text" id="cantiere" required></div>
+        <div class="field"><label>Richiedente <span class="req">*</span></label><input type="text" id="richiedente" required></div>
+        <div class="field"><label>Email richiedente</label><input type="email" id="emailRichiedente"></div>
+        <div class="field"><label>Data richiesta <span class="req">*</span></label><input type="date" id="data" required></div>
+        <div class="field"><label>Consegna richiesta</label><input type="date" id="dataConsegna"></div>
+        <div class="field"><label>Urgenza <span class="req">*</span></label>
+          <select id="urgenza"><option value="NORMALE">Normale</option><option value="URGENTE">Urgente</option><option value="URGENTISSIMO">Urgentissimo</option></select>
+        </div>
+        <div class="field"><label>Luogo di consegna <span class="req">*</span></label>
+          <select id="luogoConsegna">
+            <option value="SEDE">📦 In sede</option>
+            <option value="CANTIERE">🏗️ Cantiere</option>
+          </select>
+        </div>
+      </div>
+
+      <h2>Materiali richiesti</h2>
+      <div style="overflow-x:auto">
+        <table class="materiali-table">
+          <thead><tr>
+            <th style="width:40px">#</th><th style="width:120px">Codice</th>
+            <th>Descrizione <span style="color:#ffcdd2">*</span></th>
+            <th style="width:80px">Q.tà <span style="color:#ffcdd2">*</span></th>
+            <th style="width:80px">U.M.</th><th>Note</th><th style="width:50px"></th>
+          </tr></thead>
+          <tbody id="righe"></tbody>
+        </table>
+      </div>
+      <button type="button" class="btn add-row" onclick="addRow()">+ Aggiungi riga</button>
+
+      <h2>Note generali</h2>
+      <textarea id="noteGenerali" placeholder="Specifiche, modalità di consegna, contatti cantiere, ecc."></textarea>
+
+      <div class="actions">
+        <button type="button" class="btn btn-secondary" onclick="resetForm()">Reset</button>
+        <button type="submit" class="btn btn-primary" id="btnInvia">Invia richiesta</button>
+      </div>
+    </form>
+    <div id="loading" class="loading"><div class="spinner"></div><p>Invio in corso...</p></div>
+  </div>
+
+  <!-- TOAST CONFERMA -->
+  <div class="toast" id="toast">
+    <span class="toast-icon">✅</span>
+    <span id="toast-msg">Richiesta inviata!</span>
+  </div>
+
+  <script>
+    // ====== CONFIGURAZIONE — MODIFICA QUESTE DUE RIGHE ======
+    // ═══ CONNESSIONE AL DATABASE TCS (Supabase) ═══════════════════════════
+const SB_URL = 'https://yidtynjmmxwzteylmhdw.supabase.co';     // es. https://abcdefgh.supabase.co
+const SB_KEY = 'sb_publishable_Xq9e_Fvz-iJTLJAQh7WV7A_Ghr2rvn4';      // chiave "anon" / "publishable" (è pubblica per progetto)
+const DASH_EMAIL = 'c.tecnico@tcs-impianti.it';   // utente creato in Supabase per la dashboard
+const APPS_SCRIPT_URL = SB_URL;                   // (compatibilità con le pagine del materiale)
+const TOKEN = '';
+const SCRIPT_URL = SB_URL;
+var sbSess = null;
+try { sbSess = JSON.parse(sessionStorage.getItem('sb_sess') || 'null'); } catch(e) {}
+function sbSalvaSess(s) { sbSess = s; try { if (s) sessionStorage.setItem('sb_sess', JSON.stringify(s)); else sessionStorage.removeItem('sb_sess'); } catch(e) {} }
+async function sbRaw(path, o) {
+  o = o || {};
+  var h = { 'apikey': SB_KEY, 'Content-Type': 'application/json' };
+  if (o.token) h['Authorization'] = 'Bearer ' + o.token;
+  else if (SB_KEY.indexOf('eyJ') === 0) h['Authorization'] = 'Bearer ' + SB_KEY;
+  for (var k in (o.headers || {})) h[k] = o.headers[k];
+  var res = await fetch(SB_URL + path, { method: o.method || 'GET', headers: h, signal: o.signal,
+    body: o.body !== undefined ? JSON.stringify(o.body) : undefined });
+  var txt = await res.text(), data = null;
+  try { data = txt ? JSON.parse(txt) : null; } catch(e) {}
+  if (!res.ok) {
+    var err = new Error((data && (data.message || data.msg || data.error_description || data.error)) || ('errore ' + res.status));
+    err.http = true; err.status = res.status; throw err;
+  }
+  return data;
+}
+async function sbToken() {
+  if (!sbSess) return null;
+  if (sbSess.expires_at - 60 > Date.now() / 1000) return sbSess.access_token;
+  try {
+    var d = await sbRaw('/auth/v1/token?grant_type=refresh_token', { method: 'POST', body: { refresh_token: sbSess.refresh_token } });
+    sbSalvaSess({ access_token: d.access_token, refresh_token: d.refresh_token, expires_at: d.expires_at || (Date.now() / 1000 + d.expires_in) });
+    return sbSess.access_token;
+  } catch(e) { if (e.http) sbSalvaSess(null); throw e; }
+}
+async function sbLogin(password) {
+  var d = await sbRaw('/auth/v1/token?grant_type=password', { method: 'POST', body: { email: DASH_EMAIL, password: password } });
+  sbSalvaSess({ access_token: d.access_token, refresh_token: d.refresh_token, expires_at: d.expires_at || (Date.now() / 1000 + d.expires_in) });
+}
+async function sbApi(path, o) { o = o || {}; o.token = await sbToken(); return sbRaw(path, o); }
+function sbRpc(nome, args, o) { o = o || {}; o.method = 'POST'; o.body = args || {}; return sbApi('/rest/v1/rpc/' + nome, o); }
+var sbCfg = null;
+async function sbConfig() {
+  if (sbCfg) return sbCfg;
+  var righe = await sbApi('/rest/v1/impostazioni?select=chiave,valore'), c = {};
+  righe.forEach(function(r) { c[r.chiave] = r.valore; });
+  sbCfg = { azienda: c.azienda || '', piva: c.piva || '', tel: c.tel || '', email: c.email || '', logo: c.logo || '' };
+  return sbCfg;
+}
+async function sbOperai() {
+  var righe = await sbApi('/rest/v1/operai?select=nome&order=pos.asc,id.asc');
+  return righe.map(function(r) { return r.nome; });
+}
+function sbRiga(x) {
+  return { fileId: String(x.id), numero: x.numero || '', data: x.data || '', cliente: x.cliente || '', commessa: String(x.commessa || ''),
+    tecnico: x.tecnico || '', tipo: x.tipo || '', stato: x.stato || '0',
+    totLav: Number(x.tot_lav) || 0, totStr: Number(x.tot_str) || 0, totSab: Number(x.tot_sab) || 0,
+    totFest: Number(x.tot_fest) || 0, totViag: Number(x.tot_viag) || 0, firmato: !!x.firmato };
+}
+function sbCsv(line) {   // CSV con separatore ; e campi tra virgolette
+  var res = [], cur = '', q = false;
+  for (var i = 0; i < line.length; i++) {
+    var ch = line[i];
+    if (ch === '"') q = !q; else if (ch === ';' && !q) { res.push(cur); cur = ''; } else cur += ch;
+  }
+  res.push(cur); return res;
+}
+// Protegge una pagina riservata: se non c'è il login chiede la password, poi avvia la pagina
+function sbProteggi(avvia) {
+  if (sbSess) { avvia(); return; }
+  var ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:#f5f4f0;z-index:99999;display:flex;align-items:center;justify-content:center;font-family:sans-serif';
+  ov.innerHTML = '<div style="background:#fff;padding:28px;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.12);width:min(340px,90vw)"><h3 style="margin:0 0 14px">Accesso responsabile</h3>' +
+    '<input type="password" id="sb-pw" placeholder="Password" style="width:100%;padding:11px;font-size:16px;border:1px solid #ccc;border-radius:6px;box-sizing:border-box">' +
+    '<button id="sb-go" style="width:100%;margin-top:12px;padding:11px;font-size:15px;border:0;border-radius:6px;background:#1a1a18;color:#fff;cursor:pointer">Accedi</button>' +
+    '<div id="sb-er" style="color:#a22;font-size:13px;margin-top:10px;display:none"></div></div>';
+  document.body.appendChild(ov);
+  var pw = ov.querySelector('#sb-pw'), er = ov.querySelector('#sb-er');
+  async function vai() {
+    try { await sbLogin(pw.value); ov.remove(); avvia(); }
+    catch (e) { er.textContent = e.http ? 'Password non corretta.' : 'Connessione non riuscita. Riprova.'; er.style.display = 'block'; pw.value = ''; }
+  }
+  ov.querySelector('#sb-go').onclick = vai;
+  pw.addEventListener('keydown', function(e) { if (e.key === 'Enter') vai(); });
+  pw.focus();
+}
+async function sbMail(corpo) {
+  var tok = await sbToken();
+  var h = { 'apikey': SB_KEY, 'Content-Type': 'application/json' };
+  if (tok) h['Authorization'] = 'Bearer ' + tok;
+  var res = await fetch(SB_URL + '/functions/v1/rapportini-mail', { method: 'POST', headers: h, body: JSON.stringify(corpo) });
+  var d = null; try { d = await res.json(); } catch(e) {}
+  if (!res.ok || !d || !d.ok) { var er = new Error((d && d.error) || ('errore ' + res.status)); er.http = true; throw er; }
+  return d;
+}
+// Gestisce le richieste dell'app come faceva il vecchio server: stesse azioni, stesse risposte.
+async function sbGestisci(url, opts) {
+  var q = new URLSearchParams(url.indexOf('?') >= 0 ? url.substring(url.indexOf('?') + 1) : '');
+  var azione = q.get('action') || '', post = null;
+  if (opts && opts.body) { try { post = JSON.parse(opts.body); } catch(e) {} }
+  var sig = opts && opts.signal;
+  if (post) {
+    if (post.action) {   // ── richiesta materiale
+      function sbMat(x) {
+        var luogo = String(x.luogo || 'SEDE').trim().toUpperCase();
+        return { riga: x.id, Timestamp: x.created_at, Commessa: x.commessa || '', Cantiere: x.cantiere || '', Richiedente: x.richiedente || '',
+          Email: x.email || '', Urgenza: x.urgenza || 'NORMALE', 'Consegna richiesta': x.consegna_richiesta || '', 'Luogo Consegna': luogo, LuogoConsegna: luogo,
+          'N. articoli': x.n_articoli || 0, Dettagli: x.dettagli || '', Note: x.note || '', Stato: x.stato || 'Da evadere' };
+      }
+      if (post.action === 'listaPerNome') {
+        var mie = await sbRpc('mat_per_nome', { nome: post.richiedente || '' }, { signal: sig });
+        return { success: true, dati: (mie || []).map(sbMat) };
+      }
+      if (post.action === 'lista') {
+        var tutte = [], d0 = 0;
+        while (true) {
+          var pg = await sbApi('/rest/v1/richieste_materiale?select=*&order=created_at.desc', { headers: { 'Range-Unit': 'items', 'Range': d0 + '-' + (d0 + 999) } });
+          tutte = tutte.concat(pg); if (pg.length < 1000) break; d0 += 1000;
+        }
+        return { success: true, dati: tutte.map(sbMat) };
+      }
+      if (post.action === 'updateStato') {
+        var up = await sbApi('/rest/v1/richieste_materiale?id=eq.' + parseInt(post.riga, 10), { method: 'PATCH', body: { stato: post.stato }, headers: { 'Prefer': 'return=representation' } });
+        return up && up.length ? { success: true } : { success: false, message: 'Richiesta non trovata o accesso non autorizzato' };
+      }
+      if (post.action === 'elimina') {
+        var dm = await sbApi('/rest/v1/richieste_materiale?id=eq.' + parseInt(post.riga, 10), { method: 'DELETE', headers: { 'Prefer': 'return=representation' } });
+        return dm && dm.length ? { success: true } : { success: false, message: 'Richiesta non trovata o accesso non autorizzato' };
+      }
+      return { success: false, message: 'azione sconosciuta' };
+    }
+    if (post.materiali && post.richiedente !== undefined && post.urgenza !== undefined) {   // nuova richiesta materiale
+      return await sbRpc('mat_invia', { d: post }, { signal: sig });
+    }
+    if (post._action === 'importaGbCsv') {   // elenco servizi GeoBadge da CSV (separatore ;)
+      var righe = String(post.csv || '').split(/\r?\n/).filter(function(r) { return r.trim(); }), out = [];
+      for (var gi = 1; gi < righe.length; gi++) {
+        var cols = sbCsv(righe[gi]); if (cols.length < 4) continue;
+        out.push({ azienda: cols[0], cliente: cols[1], descrizione: cols[2], numero: cols[3] });
+      }
+      var cnt = await sbRpc('gb_importa', { righe: out });
+      return { ok: true, count: cnt };
+    }
+    if (post._action === 'saveOperai') { await sbRpc('rap_salva_operai', { nomi: post.operai || [] }); return { ok: true }; }
+    if (post._action === 'elimina') {
+      await sbApi('/rest/v1/rapportini?id=eq.' + encodeURIComponent(String(post.fileId || '').replace(/\D/g, '')), { method: 'DELETE' });
+      return { ok: true };
+    }
+    if (post._action === 'verifica') {
+      var pres = await sbRpc('rap_verifica', { numeri: post.numeri || [] }, { signal: sig });
+      return { ok: true, rapportini: (pres || []).map(function(n) { return { numero: n }; }) };
+    }
+    if (post._action === 'sendMail') { await sbMail({ tipo: 'cliente', to: post.to, rapportino: post.rapportino }); return { ok: true }; }
+    if (post._action === 'sendIdea') { await sbMail({ tipo: 'idea', nome: post.nome, testo: post.testo }); return { ok: true }; }
+    return await sbRpc('rap_salva', { r: post }, { signal: sig });
+  }
+  if (azione === 'gbLocale') {
+    var gb = [], g0 = 0;
+    while (true) {
+      var gp = await sbApi('/rest/v1/gb_servizi?select=azienda,cliente,descrizione,numero&order=id.asc', { headers: { 'Range-Unit': 'items', 'Range': g0 + '-' + (g0 + 999) } });
+      gb = gb.concat(gp); if (gp.length < 1000) break; g0 += 1000;
+    }
+    return { ok: true, servizi: gb };
+  }
+  if (azione === 'ping') { await sbConfig(); return { ok: true, msg: 'Database collegato' }; }
+  if (azione === 'config') { var c = await sbConfig(); var o = await sbOperai(); return Object.assign({ ok: true, operai: o }, c); }
+  if (azione === 'nextnum') { return { ok: true, numero: await sbRpc('rap_next_numero') }; }
+  if (azione === 'operai') { return { ok: true, operai: await sbOperai() }; }
+  if (azione === 'reindex') { return { ok: true, msg: 'Non serve: i dati sono in un database SQL.' }; }
+  if (azione === 'list') {
+    var tutti = [], da = 0, passo = 1000;
+    while (true) {
+      var pag = await sbApi('/rest/v1/rapportini?select=id,numero,data,cliente,commessa,tecnico,tipo,stato,tot_lav,tot_str,tot_sab,tot_fest,tot_viag,firmato&order=data.desc.nullslast,id.desc',
+        { headers: { 'Range-Unit': 'items', 'Range': da + '-' + (da + passo - 1) } });
+      tutti = tutti.concat(pag);
+      if (pag.length < passo) break;
+      da += passo;
+    }
+    return { ok: true, rapportini: tutti.map(sbRiga) };
+  }
+  if (azione === 'get') {
+    var id = String(q.get('fileId') || '').replace(/\D/g, '');
+    if (!id) return { ok: false, error: 'fileId non valido' };
+    var rr = await sbApi('/rest/v1/rapportini?id=eq.' + id + '&select=*');
+    if (!rr.length) return { ok: false, error: 'Rapportino non trovato' };
+    var x = rr[0], cf = await sbConfig();
+    return { ok: true, rapportino: Object.assign({ id: x.client_id || String(x.id), numero: x.numero || '', data: x.data || '', cliente: x.cliente || '',
+      commessa: String(x.commessa || ''), indirizzo: x.indirizzo || '', tecnico: x.tecnico || '', tipo: x.tipo || '', stato: x.stato || '0',
+      descrizione: x.descrizione || '', note: x.note || '', totLav: Number(x.tot_lav) || 0, totStr: Number(x.tot_str) || 0, totSab: Number(x.tot_sab) || 0,
+      totFest: Number(x.tot_fest) || 0, totViag: Number(x.tot_viag) || 0, materiali: x.materiali || [], operai: x.operai || [], firme: x.firme || {},
+      firmato: !!x.firmato, syncedAt: x.synced_at || '', createdAt: x.created_at || '', driveFileId: String(x.id) }, cf) };
+  }
+  return { ok: false, error: 'azione sconosciuta' };
+}
+// Sostituisce fetch(SCRIPT_URL…) nel resto dell'app: restituisce un oggetto "come una risposta di rete"
+async function apiFetch(url, opts) {
+  var d;
+  try { d = await sbGestisci(url, opts); }
+  catch(e) { if (e && e.http) d = { ok: false, error: e.message }; else throw e; }
+  var txt = JSON.stringify(d);
+  return { ok: true, status: 200, text: async function() { return txt; }, json: async function() { return d; } };
+}
+// ═══════════════════════════════════════════════════════════════════
+
+    // =========================================================
+
+    const UM = ['pz','m','ml','kg','cf','rotolo','mt²','l','set'];
+
+    function addRow(){
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="num" style="text-align:center"></td>
+        <td><input type="text" class="codice"></td>
+        <td><input type="text" class="descr" required></td>
+        <td><input type="number" class="qta" step="0.01" min="0" required></td>
+        <td><select class="um">${UM.map(u=>`<option>${u}</option>`).join('')}</select></td>
+        <td><input type="text" class="note"></td>
+        <td><button type="button" class="btn btn-danger" onclick="delRow(this)">✕</button></td>`;
+      document.getElementById('righe').appendChild(tr);
+      renum();
+    }
+    function delRow(b){
+      if(document.querySelectorAll('#righe tr').length === 1){ alertMsg('Deve esserci almeno una riga','error'); return; }
+      b.closest('tr').remove(); renum();
+    }
+    function renum(){ document.querySelectorAll('#righe tr').forEach((tr,i)=>tr.querySelector('.num').textContent=i+1); }
+    function resetForm(){
+      document.getElementById('form').reset();
+      document.getElementById('righe').innerHTML=''; addRow(); setOggi();
+    }
+    function setOggi(){ document.getElementById('data').value = new Date().toISOString().split('T')[0]; }
+    function showToast(msg){
+      const t=document.getElementById('toast');
+      const tm=document.getElementById('toast-msg');
+      tm.textContent=msg;
+      t.classList.add('show');
+      setTimeout(()=>t.classList.remove('show'),3500);
+    }
+
+    function alertMsg(m,t){
+      const a=document.getElementById('alert');
+      a.textContent=m; a.className='alert show alert-'+t;
+      window.scrollTo({top:0,behavior:'smooth'});
+      if(t==='success') setTimeout(()=>a.classList.remove('show'),5000);
+    }
+
+    document.getElementById('form').addEventListener('submit', e=>{
+      e.preventDefault();
+      const mat=[];
+      let ok=true;
+      document.querySelectorAll('#righe tr').forEach(tr=>{
+        const d=tr.querySelector('.descr').value.trim();
+        const q=tr.querySelector('.qta').value;
+        if(!d||!q){ok=false;return;}
+        mat.push({
+          codice:tr.querySelector('.codice').value.trim(),
+          descrizione:d, quantita:q,
+          unita:tr.querySelector('.um').value,
+          note:tr.querySelector('.note').value.trim()
+        });
+      });
+      if(!ok||!mat.length){ alertMsg('Compila almeno una riga (descrizione + quantità)','error'); return; }
+
+      // Validazione formato commessa
+      const commessaVal = commessa.value.trim().toLowerCase();
+      const commessaRegex = /^\d{5}cen\d{2}$/;
+      if(!commessaRegex.test(commessaVal)){
+        alertMsg('Formato commessa non valido. Usa: 5 numeri + cen + 2 numeri anno (es. 00227cen25)','error');
+        commessa.focus(); return;
+      }
+
+      const dati={
+        token: TOKEN,
+        commessa:commessa.value.trim(), cantiere:cantiere.value.trim(),
+        richiedente:richiedente.value.trim(), emailRichiedente:emailRichiedente.value.trim(),
+        data:data.value, dataConsegna:dataConsegna.value, urgenza:urgenza.value,
+        luogoConsegna:luogoConsegna.value,
+        noteGenerali:noteGenerali.value.trim(), materiali:mat
+      };
+
+      btnInvia.disabled=true; document.getElementById('loading').classList.add('show');
+
+      apiFetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify(dati)
+      })
+      .then(r => r.json())
+      .then(r => {
+        document.getElementById('loading').classList.remove('show');
+        btnInvia.disabled=false;
+        alertMsg(r.message, r.success?'success':'error');
+        if(r.success){ try{ localStorage.setItem('mie_richieste_nome', dati.richiedente); }catch(e){} showToast('✓ Richiesta inviata con successo!'); resetForm(); }
+      })
+      .catch(err => {
+        document.getElementById('loading').classList.remove('show');
+        btnInvia.disabled=false;
+        alertMsg('Errore di rete: '+err.message,'error');
+      });
+    });
+
+    setOggi(); addRow();
+  </script>
+</body>
+</html>

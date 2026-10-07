@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calcolo Costi Manodopera</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+:root{--bg:#f5f4f0;--surface:#fff;--surface2:#f0efe9;--surface3:#e8e7e0;--border:#e0dfd8;--border2:#cccbc2;--text:#1a1a18;--text2:#6b6a62;--text3:#9b9a92;--font:'IBM Plex Sans',sans-serif;--mono:'IBM Plex Mono',monospace;--radius:8px;--green:#2d6a2d;--blue:#1a4a7a;--red:#c0392b;--amber:#c07000}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 28px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.topbar-brand{font-family:var(--mono);font-size:13px;color:var(--text2)}
+.topbar-brand strong{color:var(--text);font-weight:600}
+.main{max-width:1100px;margin:0 auto;padding:28px 24px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:20px}
+.card-title{font-size:11px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin-bottom:16px;padding-bottom:11px;border-bottom:1px solid var(--border)}
+.btn{border-radius:6px;padding:9px 18px;font-size:13px;font-weight:500;font-family:var(--font);cursor:pointer;border:1px solid var(--border2);background:var(--surface2);color:var(--text);white-space:nowrap;transition:all .15s}
+.btn:hover{background:var(--surface3)}
+.btn-accent{background:var(--text);color:#fff;border-color:var(--text)}
+.btn-accent:hover{opacity:.88}
+label{font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--text3)}
+input,select{background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:9px 12px;font-size:13px;font-family:var(--font);color:var(--text);width:100%}
+input:focus,select:focus{outline:none;border-color:var(--text)}
+.commessa-item{display:flex;align-items:center;gap:10px;padding:12px 16px;border:1px solid var(--border);border-radius:6px;cursor:pointer;margin-bottom:8px;transition:all .15s}
+.commessa-item:hover{border-color:var(--text);background:var(--surface2)}
+.commessa-code{font-family:var(--mono);font-size:12px;color:var(--blue);font-weight:600;min-width:120px}
+.commessa-info{flex:1;font-size:13px}
+.commessa-info small{color:var(--text2);font-size:12px}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-family:var(--mono);background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--text3);padding:10px 12px;border-bottom:1px solid var(--border2);white-space:nowrap;background:var(--surface2)}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+td input{padding:7px 10px;font-size:13px}
+tr:last-child td{border-bottom:none}
+.tot-bar{display:flex;gap:24px;flex-wrap:wrap;padding:20px 24px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:20px;align-items:flex-end}
+.tot-item{display:flex;flex-direction:column;gap:4px}
+.tot-label{font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--text3)}
+.tot-val{font-size:24px;font-weight:300;letter-spacing:-.5px}
+.green{color:var(--green)}.blue{color:var(--blue)}.amber{color:var(--amber)}.red{color:var(--red)}
+.big{font-size:32px;font-weight:500}
+.empty{text-align:center;padding:40px;color:var(--text3);font-family:var(--mono);font-size:13px}
+.alert{padding:12px 16px;border-radius:6px;font-size:13px;margin-bottom:16px;display:none;background:#fae8e8;color:#7a1a1a;border:1px solid #e8b8b8}
+.alert.show{display:block}
+.info-box{display:flex;gap:20px;flex-wrap:wrap;padding:14px 16px;background:var(--surface2);border-radius:6px;margin-bottom:16px}
+.info-box-item .lbl{font-size:10px;font-family:var(--mono);text-transform:uppercase;color:var(--text3)}
+.info-box-item .val{font-size:14px;font-weight:600;margin-top:2px}
+@media print{
+  .no-print{display:none!important}
+  body{background:#fff}
+  #step1,#step2{display:none!important}
+  #tot-bar{display:flex!important;border:1px solid #ccc;margin-bottom:12px}
+  .card{border:1px solid #ccc;box-shadow:none}
+  .topbar{position:static;border-bottom:1px solid #ccc}
+}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-brand">&#9672; <strong>Costi</strong> Manodopera</div>
+  <div style="display:flex;gap:10px;align-items:center">
+    <button class="btn no-print" onclick="window.print()">&#128438; Stampa</button>
+    <button class="btn no-print" onclick="history.back()" style="background:var(--text);color:#fff;border-color:var(--text)">&#8592; Dashboard</button>
+  </div>
+</div>
+
+<div class="main">
+  <div id="alert" class="alert"></div>
+
+  <!-- STEP 1 -->
+  <div class="card" id="card-tariffe-generali">
+    <div class="card-title">Tariffe generali (&#8364;/h)</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:14px">Impostale una sola volta: verranno applicate di default a tutti gli operai. Puoi comunque modificarle per singolo operaio dopo aver selezionato una commessa.</p>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px">
+      <div class="fg"><label>Ordinario</label><input type="number" id="tg-lav" min="0" step="0.5" placeholder="0,00"></div>
+      <div class="fg"><label>Straordinario</label><input type="number" id="tg-str" min="0" step="0.5" placeholder="0,00"></div>
+      <div class="fg"><label>Sabato</label><input type="number" id="tg-sab" min="0" step="0.5" placeholder="0,00"></div>
+      <div class="fg"><label>Festivo</label><input type="number" id="tg-fest" min="0" step="0.5" placeholder="0,00"></div>
+      <div class="fg"><label>Viaggio</label><input type="number" id="tg-viag" min="0" step="0.5" placeholder="0,00"></div>
+    </div>
+    <div style="margin-top:14px">
+      <button class="btn btn-accent" onclick="salvaTariffeGenerali()">&#128190; Salva tariffe generali</button>
+    </div>
+  </div>
+
+  <div class="card" id="step1">
+    <div class="card-title">1 — Seleziona commessa</div>
+    <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;align-items:flex-end">
+      <div class="fg" style="max-width:160px"><label>Periodo dal</label><input type="date" id="periodo-da" onchange="ricalcolaSeAttivo()"></div>
+      <div class="fg" style="max-width:160px"><label>Periodo al</label><input type="date" id="periodo-a" onchange="ricalcolaSeAttivo()"></div>
+      <button class="btn" onclick="resetPeriodo()">&#10006; Rimuovi filtro periodo</button>
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+      <input type="text" id="search-commessa" placeholder="Cerca commessa, cliente..." oninput="filtraCommesse()" style="max-width:300px">
+      <button class="btn btn-accent" onclick="caricaCommesse()">&#8635; Aggiorna</button>
+    </div>
+    <div id="lista-commesse"><div class="empty">Caricamento...</div></div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="card" id="step2" style="display:none">
+    <div class="card-title">2 — Tariffe orarie (&#8364;/h)</div>
+    <div id="info-commessa"></div>
+    <div id="tabella-tariffe"><div class="empty">Caricamento operai...</div></div>
+    <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap" class="no-print">
+      <button class="btn btn-accent" onclick="calcolaCosti()">&#128202; Calcola costi</button>
+      <button class="btn" onclick="resetSelezione()">&#8592; Cambia commessa</button>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div id="step3" style="display:none">
+    <div class="tot-bar" id="tot-bar"></div>
+    <div class="card">
+      <div class="card-title">Dettaglio per operaio</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Operaio</th>
+              <th style="text-align:right">Ore ord.</th><th style="text-align:right">&#8364;/h</th><th style="text-align:right">Costo ord.</th>
+              <th style="text-align:right">Ore str.</th><th style="text-align:right">&#8364;/h</th><th style="text-align:right">Costo str.</th>
+              <th style="text-align:right">Ore sab.</th><th style="text-align:right">&#8364;/h</th><th style="text-align:right">Costo sab.</th>
+              <th style="text-align:right">Ore fest.</th><th style="text-align:right">&#8364;/h</th><th style="text-align:right">Costo fest.</th>
+              <th style="text-align:right">Ore viag.</th><th style="text-align:right">&#8364;/h</th><th style="text-align:right">Costo viag.</th>
+              <th style="text-align:right">Totale</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-risultato"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══ CONNESSIONE AL DATABASE TCS (Supabase) ═══════════════════════════
+const SB_URL = 'https://yidtynjmmxwzteylmhdw.supabase.co';     // es. https://abcdefgh.supabase.co
+const SB_KEY = 'sb_publishable_Xq9e_Fvz-iJTLJAQh7WV7A_Ghr2rvn4';      // chiave "anon" / "publishable" (è pubblica per progetto)
+const DASH_EMAIL = 'c.tecnico@tcs-impianti.it';   // utente creato in Supabase per la dashboard
+const APPS_SCRIPT_URL = SB_URL;                   // (compatibilità con le pagine del materiale)
+const TOKEN = '';
+const SCRIPT_URL = SB_URL;
+var sbSess = null;
+try { sbSess = JSON.parse(sessionStorage.getItem('sb_sess') || 'null'); } catch(e) {}
+function sbSalvaSess(s) { sbSess = s; try { if (s) sessionStorage.setItem('sb_sess', JSON.stringify(s)); else sessionStorage.removeItem('sb_sess'); } catch(e) {} }
+async function sbRaw(path, o) {
+  o = o || {};
+  var h = { 'apikey': SB_KEY, 'Content-Type': 'application/json' };
+  if (o.token) h['Authorization'] = 'Bearer ' + o.token;
+  else if (SB_KEY.indexOf('eyJ') === 0) h['Authorization'] = 'Bearer ' + SB_KEY;
+  for (var k in (o.headers || {})) h[k] = o.headers[k];
+  var res = await fetch(SB_URL + path, { method: o.method || 'GET', headers: h, signal: o.signal,
+    body: o.body !== undefined ? JSON.stringify(o.body) : undefined });
+  var txt = await res.text(), data = null;
+  try { data = txt ? JSON.parse(txt) : null; } catch(e) {}
+  if (!res.ok) {
+    var err = new Error((data && (data.message || data.msg || data.error_description || data.error)) || ('errore ' + res.status));
+    err.http = true; err.status = res.status; throw err;
+  }
+  return data;
+}
+async function sbToken() {
+  if (!sbSess) return null;
+  if (sbSess.expires_at - 60 > Date.now() / 1000) return sbSess.access_token;
+  try {
+    var d = await sbRaw('/auth/v1/token?grant_type=refresh_token', { method: 'POST', body: { refresh_token: sbSess.refresh_token } });
+    sbSalvaSess({ access_token: d.access_token, refresh_token: d.refresh_token, expires_at: d.expires_at || (Date.now() / 1000 + d.expires_in) });
+    return sbSess.access_token;
+  } catch(e) { if (e.http) sbSalvaSess(null); throw e; }
+}
+async function sbLogin(password) {
+  var d = await sbRaw('/auth/v1/token?grant_type=password', { method: 'POST', body: { email: DASH_EMAIL, password: password } });
+  sbSalvaSess({ access_token: d.access_token, refresh_token: d.refresh_token, expires_at: d.expires_at || (Date.now() / 1000 + d.expires_in) });
+}
+async function sbApi(path, o) { o = o || {}; o.token = await sbToken(); return sbRaw(path, o); }
+function sbRpc(nome, args, o) { o = o || {}; o.method = 'POST'; o.body = args || {}; return sbApi('/rest/v1/rpc/' + nome, o); }
+var sbCfg = null;
+async function sbConfig() {
+  if (sbCfg) return sbCfg;
+  var righe = await sbApi('/rest/v1/impostazioni?select=chiave,valore'), c = {};
+  righe.forEach(function(r) { c[r.chiave] = r.valore; });
+  sbCfg = { azienda: c.azienda || '', piva: c.piva || '', tel: c.tel || '', email: c.email || '', logo: c.logo || '' };
+  return sbCfg;
+}
+async function sbOperai() {
+  var righe = await sbApi('/rest/v1/operai?select=nome&order=pos.asc,id.asc');
+  return righe.map(function(r) { return r.nome; });
+}
+function sbRiga(x) {
+  return { fileId: String(x.id), numero: x.numero || '', data: x.data || '', cliente: x.cliente || '', commessa: String(x.commessa || ''),
+    tecnico: x.tecnico || '', tipo: x.tipo || '', stato: x.stato || '0',
+    totLav: Number(x.tot_lav) || 0, totStr: Number(x.tot_str) || 0, totSab: Number(x.tot_sab) || 0,
+    totFest: Number(x.tot_fest) || 0, totViag: Number(x.tot_viag) || 0, firmato: !!x.firmato };
+}
+function sbCsv(line) {   // CSV con separatore ; e campi tra virgolette
+  var res = [], cur = '', q = false;
+  for (var i = 0; i < line.length; i++) {
+    var ch = line[i];
+    if (ch === '"') q = !q; else if (ch === ';' && !q) { res.push(cur); cur = ''; } else cur += ch;
+  }
+  res.push(cur); return res;
+}
+// Protegge una pagina riservata: se non c'è il login chiede la password, poi avvia la pagina
+function sbProteggi(avvia) {
+  if (sbSess) { avvia(); return; }
+  var ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:#f5f4f0;z-index:99999;display:flex;align-items:center;justify-content:center;font-family:sans-serif';
+  ov.innerHTML = '<div style="background:#fff;padding:28px;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.12);width:min(340px,90vw)"><h3 style="margin:0 0 14px">Accesso responsabile</h3>' +
+    '<input type="password" id="sb-pw" placeholder="Password" style="width:100%;padding:11px;font-size:16px;border:1px solid #ccc;border-radius:6px;box-sizing:border-box">' +
+    '<button id="sb-go" style="width:100%;margin-top:12px;padding:11px;font-size:15px;border:0;border-radius:6px;background:#1a1a18;color:#fff;cursor:pointer">Accedi</button>' +
+    '<div id="sb-er" style="color:#a22;font-size:13px;margin-top:10px;display:none"></div></div>';
+  document.body.appendChild(ov);
+  var pw = ov.querySelector('#sb-pw'), er = ov.querySelector('#sb-er');
+  async function vai() {
+    try { await sbLogin(pw.value); ov.remove(); avvia(); }
+    catch (e) { er.textContent = e.http ? 'Password non corretta.' : 'Connessione non riuscita. Riprova.'; er.style.display = 'block'; pw.value = ''; }
+  }
+  ov.querySelector('#sb-go').onclick = vai;
+  pw.addEventListener('keydown', function(e) { if (e.key === 'Enter') vai(); });
+  pw.focus();
+}
+async function sbMail(corpo) {
+  var tok = await sbToken();
+  var h = { 'apikey': SB_KEY, 'Content-Type': 'application/json' };
+  if (tok) h['Authorization'] = 'Bearer ' + tok;
+  var res = await fetch(SB_URL + '/functions/v1/rapportini-mail', { method: 'POST', headers: h, body: JSON.stringify(corpo) });
+  var d = null; try { d = await res.json(); } catch(e) {}
+  if (!res.ok || !d || !d.ok) { var er = new Error((d && d.error) || ('errore ' + res.status)); er.http = true; throw er; }
+  return d;
+}
+// Gestisce le richieste dell'app come faceva il vecchio server: stesse azioni, stesse risposte.
+async function sbGestisci(url, opts) {
+  var q = new URLSearchParams(url.indexOf('?') >= 0 ? url.substring(url.indexOf('?') + 1) : '');
+  var azione = q.get('action') || '', post = null;
+  if (opts && opts.body) { try { post = JSON.parse(opts.body); } catch(e) {} }
+  var sig = opts && opts.signal;
+  if (post) {
+    if (post.action) {   // ── richiesta materiale
+      function sbMat(x) {
+        var luogo = String(x.luogo || 'SEDE').trim().toUpperCase();
+        return { riga: x.id, Timestamp: x.created_at, Commessa: x.commessa || '', Cantiere: x.cantiere || '', Richiedente: x.richiedente || '',
+          Email: x.email || '', Urgenza: x.urgenza || 'NORMALE', 'Consegna richiesta': x.consegna_richiesta || '', 'Luogo Consegna': luogo, LuogoConsegna: luogo,
+          'N. articoli': x.n_articoli || 0, Dettagli: x.dettagli || '', Note: x.note || '', Stato: x.stato || 'Da evadere' };
+      }
+      if (post.action === 'listaPerNome') {
+        var mie = await sbRpc('mat_per_nome', { nome: post.richiedente || '' }, { signal: sig });
+        return { success: true, dati: (mie || []).map(sbMat) };
+      }
+      if (post.action === 'lista') {
+        var tutte = [], d0 = 0;
+        while (true) {
+          var pg = await sbApi('/rest/v1/richieste_materiale?select=*&order=created_at.desc', { headers: { 'Range-Unit': 'items', 'Range': d0 + '-' + (d0 + 999) } });
+          tutte = tutte.concat(pg); if (pg.length < 1000) break; d0 += 1000;
+        }
+        return { success: true, dati: tutte.map(sbMat) };
+      }
+      if (post.action === 'updateStato') {
+        var up = await sbApi('/rest/v1/richieste_materiale?id=eq.' + parseInt(post.riga, 10), { method: 'PATCH', body: { stato: post.stato }, headers: { 'Prefer': 'return=representation' } });
+        return up && up.length ? { success: true } : { success: false, message: 'Richiesta non trovata o accesso non autorizzato' };
+      }
+      if (post.action === 'elimina') {
+        var dm = await sbApi('/rest/v1/richieste_materiale?id=eq.' + parseInt(post.riga, 10), { method: 'DELETE', headers: { 'Prefer': 'return=representation' } });
+        return dm && dm.length ? { success: true } : { success: false, message: 'Richiesta non trovata o accesso non autorizzato' };
+      }
+      return { success: false, message: 'azione sconosciuta' };
+    }
+    if (post.materiali && post.richiedente !== undefined && post.urgenza !== undefined) {   // nuova richiesta materiale
+      return await sbRpc('mat_invia', { d: post }, { signal: sig });
+    }
+    if (post._action === 'importaGbCsv') {   // elenco servizi GeoBadge da CSV (separatore ;)
+      var righe = String(post.csv || '').split(/\r?\n/).filter(function(r) { return r.trim(); }), out = [];
+      for (var gi = 1; gi < righe.length; gi++) {
+        var cols = sbCsv(righe[gi]); if (cols.length < 4) continue;
+        out.push({ azienda: cols[0], cliente: cols[1], descrizione: cols[2], numero: cols[3] });
+      }
+      var cnt = await sbRpc('gb_importa', { righe: out });
+      return { ok: true, count: cnt };
+    }
+    if (post._action === 'saveOperai') { await sbRpc('rap_salva_operai', { nomi: post.operai || [] }); return { ok: true }; }
+    if (post._action === 'elimina') {
+      await sbApi('/rest/v1/rapportini?id=eq.' + encodeURIComponent(String(post.fileId || '').replace(/\D/g, '')), { method: 'DELETE' });
+      return { ok: true };
+    }
+    if (post._action === 'verifica') {
+      var pres = await sbRpc('rap_verifica', { numeri: post.numeri || [] }, { signal: sig });
+      return { ok: true, rapportini: (pres || []).map(function(n) { return { numero: n }; }) };
+    }
+    if (post._action === 'sendMail') { await sbMail({ tipo: 'cliente', to: post.to, rapportino: post.rapportino }); return { ok: true }; }
+    if (post._action === 'sendIdea') { await sbMail({ tipo: 'idea', nome: post.nome, testo: post.testo }); return { ok: true }; }
+    return await sbRpc('rap_salva', { r: post }, { signal: sig });
+  }
+  if (azione === 'gbLocale') {
+    var gb = [], g0 = 0;
+    while (true) {
+      var gp = await sbApi('/rest/v1/gb_servizi?select=azienda,cliente,descrizione,numero&order=id.asc', { headers: { 'Range-Unit': 'items', 'Range': g0 + '-' + (g0 + 999) } });
+      gb = gb.concat(gp); if (gp.length < 1000) break; g0 += 1000;
+    }
+    return { ok: true, servizi: gb };
+  }
+  if (azione === 'ping') { await sbConfig(); return { ok: true, msg: 'Database collegato' }; }
+  if (azione === 'config') { var c = await sbConfig(); var o = await sbOperai(); return Object.assign({ ok: true, operai: o }, c); }
+  if (azione === 'nextnum') { return { ok: true, numero: await sbRpc('rap_next_numero') }; }
+  if (azione === 'operai') { return { ok: true, operai: await sbOperai() }; }
+  if (azione === 'reindex') { return { ok: true, msg: 'Non serve: i dati sono in un database SQL.' }; }
+  if (azione === 'list') {
+    var tutti = [], da = 0, passo = 1000;
+    while (true) {
+      var pag = await sbApi('/rest/v1/rapportini?select=id,numero,data,cliente,commessa,tecnico,tipo,stato,tot_lav,tot_str,tot_sab,tot_fest,tot_viag,firmato&order=data.desc.nullslast,id.desc',
+        { headers: { 'Range-Unit': 'items', 'Range': da + '-' + (da + passo - 1) } });
+      tutti = tutti.concat(pag);
+      if (pag.length < passo) break;
+      da += passo;
+    }
+    return { ok: true, rapportini: tutti.map(sbRiga) };
+  }
+  if (azione === 'get') {
+    var id = String(q.get('fileId') || '').replace(/\D/g, '');
+    if (!id) return { ok: false, error: 'fileId non valido' };
+    var rr = await sbApi('/rest/v1/rapportini?id=eq.' + id + '&select=*');
+    if (!rr.length) return { ok: false, error: 'Rapportino non trovato' };
+    var x = rr[0], cf = await sbConfig();
+    return { ok: true, rapportino: Object.assign({ id: x.client_id || String(x.id), numero: x.numero || '', data: x.data || '', cliente: x.cliente || '',
+      commessa: String(x.commessa || ''), indirizzo: x.indirizzo || '', tecnico: x.tecnico || '', tipo: x.tipo || '', stato: x.stato || '0',
+      descrizione: x.descrizione || '', note: x.note || '', totLav: Number(x.tot_lav) || 0, totStr: Number(x.tot_str) || 0, totSab: Number(x.tot_sab) || 0,
+      totFest: Number(x.tot_fest) || 0, totViag: Number(x.tot_viag) || 0, materiali: x.materiali || [], operai: x.operai || [], firme: x.firme || {},
+      firmato: !!x.firmato, syncedAt: x.synced_at || '', createdAt: x.created_at || '', driveFileId: String(x.id) }, cf) };
+  }
+  return { ok: false, error: 'azione sconosciuta' };
+}
+// Sostituisce fetch(SCRIPT_URL…) nel resto dell'app: restituisce un oggetto "come una risposta di rete"
+async function apiFetch(url, opts) {
+  var d;
+  try { d = await sbGestisci(url, opts); }
+  catch(e) { if (e && e.http) d = { ok: false, error: e.message }; else throw e; }
+  var txt = JSON.stringify(d);
+  return { ok: true, status: 200, text: async function() { return txt; }, json: async function() { return d; } };
+}
+// ═══════════════════════════════════════════════════════════════════
+
+var tuttiRapportini = [];
+var commesseMap = {};
+var commessaCorrente = null;
+var tariffe = {};
+
+try { tariffe = JSON.parse(localStorage.getItem('tariffe_v1') || '{}'); } catch(e) {}
+var tariffeGenerali = { lav: 0, str: 0, sab: 0, fest: 0, viag: 0 };
+try { tariffeGenerali = JSON.parse(localStorage.getItem('tariffe_generali_v1') || '{}'); } catch(e) {}
+if (typeof tariffeGenerali.lav === 'undefined') tariffeGenerali = { lav: 0, str: 0, sab: 0, fest: 0, viag: 0 };
+
+function el(id) { return document.getElementById(id); }
+function fmt(n) { n = Number(n) || 0; return n % 1 === 0 ? n : n.toFixed(1); }
+function fmtEur(n) { return '\u20ac ' + (Number(n) || 0).toFixed(2).replace('.', ','); }
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/[&<>"']/g, function(c) {
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+function showAlert(msg) {
+  var a = el('alert');
+  a.textContent = msg;
+  a.classList.add('show');
+  setTimeout(function() { a.classList.remove('show'); }, 5000);
+}
+
+async function caricaCommesse() {
+  el('lista-commesse').innerHTML = '<div class="empty">Caricamento...</div>';
+  try {
+    var res = await apiFetch(SCRIPT_URL + '?action=list&_dc=' + Date.now());
+    var d = await res.json();
+    if (!d.ok) throw new Error(d.error);
+    tuttiRapportini = d.rapportini || [];
+    commesseMap = {};
+    tuttiRapportini.forEach(function(r) {
+      var key = (r.commessa || '').trim() || '(senza commessa)';
+      if (!commesseMap[key]) {
+        commesseMap[key] = { commessa: key, cliente: r.cliente || '', rapportini: [], totLav: 0, totStr: 0, totViag: 0 };
+      }
+      commesseMap[key].rapportini.push(r);
+      commesseMap[key].totLav  += r.totLav  || 0;
+      commesseMap[key].totStr  += r.totStr  || 0;
+      commesseMap[key].totViag += r.totViag || 0;
+    });
+    filtraCommesse();
+  } catch(e) {
+    el('lista-commesse').innerHTML = '<div class="empty">Errore: ' + esc(e.message) + '</div>';
+  }
+}
+
+function filtraCommesse() {
+  var q = (el('search-commessa').value || '').toLowerCase().trim();
+  var lista = Object.values(commesseMap).filter(function(c) {
+    if (!q) return true;
+    return (c.commessa + ' ' + c.cliente).toLowerCase().indexOf(q) >= 0;
+  }).sort(function(a, b) { return a.commessa.localeCompare(b.commessa); });
+
+  if (!lista.length) {
+    el('lista-commesse').innerHTML = '<div class="empty">Nessuna commessa trovata</div>';
+    return;
+  }
+  el('lista-commesse').innerHTML = lista.map(function(c) {
+    return '<div class="commessa-item" onclick="selezionaCommessa(' + "'" + esc(c.commessa) + "'" + ')">' +
+      '<div class="commessa-code">' + esc(c.commessa) + '</div>' +
+      '<div class="commessa-info">' + esc(c.cliente) + '<br><small>' +
+        c.rapportini.length + ' rapportini &middot; ' +
+        fmt(c.totLav) + 'h lav. &middot; ' +
+        fmt(c.totStr) + 'h str. &middot; ' +
+        fmt(c.totViag) + 'h viag.' +
+      '</small></div>' +
+      '<div class="badge">' + c.rapportini.length + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+var ultimaCommessaSelezionata = null;
+
+function getPeriodo() {
+  var da = el('periodo-da') ? el('periodo-da').value : '';
+  var a  = el('periodo-a')  ? el('periodo-a').value  : '';
+  return { da: da, a: a };
+}
+
+function ricalcolaSeAttivo() {
+  if (ultimaCommessaSelezionata) selezionaCommessa(ultimaCommessaSelezionata);
+}
+
+function resetPeriodo() {
+  if (el('periodo-da')) el('periodo-da').value = '';
+  if (el('periodo-a'))  el('periodo-a').value  = '';
+  ricalcolaSeAttivo();
+}
+
+async function selezionaCommessa(commessa) {
+  commessaCorrente = commesseMap[commessa];
+  if (!commessaCorrente) return;
+  ultimaCommessaSelezionata = commessa;
+
+  el('step1').style.display = 'none';
+  el('step2').style.display = 'block';
+  el('step3').style.display = 'none';
+  el('tabella-tariffe').innerHTML = '<div class="empty">Caricamento operai...</div>';
+
+  var periodo = getPeriodo();
+  var rapportiniFiltrati = commessaCorrente.rapportini.filter(function(r) {
+    if (periodo.da && (r.data || '') < periodo.da) return false;
+    if (periodo.a  && (r.data || '') > periodo.a)  return false;
+    return true;
+  });
+
+  var totLavP  = rapportiniFiltrati.reduce(function(s,r){return s+(r.totLav ||0)},0);
+  var totStrP  = rapportiniFiltrati.reduce(function(s,r){return s+(r.totStr ||0)},0);
+  var totViagP = rapportiniFiltrati.reduce(function(s,r){return s+(r.totViag||0)},0);
+
+  var periodoLabel = (periodo.da || periodo.a)
+    ? '<div class="info-box-item"><div class="lbl">Periodo</div><div class="val">' + (periodo.da || '...') + ' &rarr; ' + (periodo.a || '...') + '</div></div>'
+    : '';
+
+  el('info-commessa').innerHTML =
+    '<div class="info-box">' +
+    '<div class="info-box-item"><div class="lbl">Commessa</div><div class="val">' + esc(commessa) + '</div></div>' +
+    '<div class="info-box-item"><div class="lbl">Cliente</div><div class="val">' + esc(commessaCorrente.cliente) + '</div></div>' +
+    '<div class="info-box-item"><div class="lbl">Rapportini</div><div class="val">' + rapportiniFiltrati.length + ' / ' + commessaCorrente.rapportini.length + '</div></div>' +
+    '<div class="info-box-item"><div class="lbl">Ore totali</div><div class="val">' + fmt(totLavP) + 'h lav. / ' + fmt(totStrP) + 'h str. / ' + fmt(totViagP) + 'h viag.</div></div>' +
+    periodoLabel +
+    '</div>';
+
+  if (!rapportiniFiltrati.length) {
+    renderTariffe({});
+    return;
+  }
+
+  // Carica dettaglio di ogni rapportino per avere gli operai
+  var fileIds = rapportiniFiltrati.map(function(r) { return r.fileId; }).filter(Boolean);
+  var operaiMap = {};
+  var loaded = 0;
+  var total = fileIds.length;
+
+  if (total === 0) {
+    renderTariffe(operaiMap);
+    return;
+  }
+
+  fileIds.forEach(function(fileId) {
+    apiFetch(SCRIPT_URL + '?action=get&fileId=' + encodeURIComponent(fileId) + '&_dc=' + Date.now())
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (d.ok && d.rapportino) {
+          var r = d.rapportino;
+          (r.operai || []).forEach(function(o) {
+            var nome = (o.nome || '').trim().toUpperCase();
+            if (!nome) return;
+            if (!operaiMap[nome]) operaiMap[nome] = { nome: nome, oreLav: 0, oreStr: 0, oreViag: 0 };
+            operaiMap[nome].oreLav  += parseFloat(o.oreLav)  || 0;
+            operaiMap[nome].oreStr  += parseFloat(o.oreStr)  || 0;
+            operaiMap[nome].oreViag += parseFloat(o.oreViag) || 0;
+          });
+        }
+      })
+      .catch(function() {})
+      .finally(function() {
+        loaded++;
+        if (loaded === total) {
+          commessaCorrente.operaiMap = operaiMap;
+          renderTariffe(operaiMap);
+        }
+      });
+  });
+}
+
+function renderTariffe(operaiMap) {
+  var operai = Object.values(operaiMap || {});
+  if (!operai.length) {
+    el('tabella-tariffe').innerHTML = '<div class="empty">Nessun operaio trovato nei rapportini di questa commessa</div>';
+    return;
+  }
+  var rows = operai.map(function(o, i) {
+    var t = tariffe[o.nome] || {};
+    var dLav  = (t.lav  != null && t.lav  !== '') ? t.lav  : (tariffeGenerali.lav  || '');
+    var dStr  = (t.str  != null && t.str  !== '') ? t.str  : (tariffeGenerali.str  || '');
+    var dSab  = (t.sab  != null && t.sab  !== '') ? t.sab  : (tariffeGenerali.sab  || '');
+    var dFest = (t.fest != null && t.fest !== '') ? t.fest : (tariffeGenerali.fest || '');
+    var dViag = (t.viag != null && t.viag !== '') ? t.viag : (tariffeGenerali.viag || '');
+    return '<tr>' +
+      '<td style="font-weight:600">' + esc(o.nome) + '</td>' +
+      '<td style="text-align:right;font-family:var(--mono)">' + fmt(o.oreLav) + 'h</td>' +
+      '<td style="text-align:right;font-family:var(--mono)">' + fmt(o.oreStr) + 'h</td>' +
+      '<td style="text-align:right;font-family:var(--mono)">' + fmt(o.oreSab || 0) + 'h</td>' +
+      '<td style="text-align:right;font-family:var(--mono)">' + fmt(o.oreFest || 0) + 'h</td>' +
+      '<td style="text-align:right;font-family:var(--mono)">' + fmt(o.oreViag) + 'h</td>' +
+      '<td><input type="number" class="t-lav" data-nome="' + esc(o.nome) + '" value="' + dLav + '" placeholder="0,00" min="0" step="0.5"></td>' +
+      '<td><input type="number" class="t-str" data-nome="' + esc(o.nome) + '" value="' + dStr + '" placeholder="0,00" min="0" step="0.5"></td>' +
+      '<td><input type="number" class="t-sab" data-nome="' + esc(o.nome) + '" value="' + dSab + '" placeholder="0,00" min="0" step="0.5"></td>' +
+      '<td><input type="number" class="t-fest" data-nome="' + esc(o.nome) + '" value="' + dFest + '" placeholder="0,00" min="0" step="0.5"></td>' +
+      '<td><input type="number" class="t-viag" data-nome="' + esc(o.nome) + '" value="' + dViag + '" placeholder="0,00" min="0" step="0.5"></td>' +
+    '</tr>';
+  }).join('');
+
+  el('tabella-tariffe').innerHTML =
+    '<table><thead><tr>' +
+    '<th>Operaio</th>' +
+    '<th style="text-align:right">Ore ord.</th>' +
+    '<th style="text-align:right">Ore str.</th>' +
+    '<th style="text-align:right">Ore sab.</th>' +
+    '<th style="text-align:right">Ore fest.</th>' +
+    '<th style="text-align:right">Ore viag.</th>' +
+    '<th>&#8364;/h ord.</th>' +
+    '<th>&#8364;/h str.</th>' +
+    '<th>&#8364;/h sab.</th>' +
+    '<th>&#8364;/h fest.</th>' +
+    '<th>&#8364;/h viag.</th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table>';
+}
+
+function getTariffa(cls, nome) {
+  var inputs = document.querySelectorAll('.' + cls);
+  for (var i = 0; i < inputs.length; i++) {
+    if (inputs[i].dataset.nome === nome) return parseFloat(inputs[i].value) || 0;
+  }
+  return 0;
+}
+
+function calcolaCosti() {
+  if (!commessaCorrente || !commessaCorrente.operaiMap) return;
+  var operai = Object.values(commessaCorrente.operaiMap);
+  if (!operai.length) { showAlert('Nessun operaio da calcolare.'); return; }
+
+  var righe = '';
+  var totCLav = 0, totCStr = 0, totCViag = 0;
+  var totOLav = 0, totOStr = 0, totOViag = 0;
+
+  operai.forEach(function(o) {
+    var tLav  = getTariffa('t-lav',  o.nome);
+    var tStr  = getTariffa('t-str',  o.nome);
+    var tSab  = getTariffa('t-sab',  o.nome);
+    var tFest = getTariffa('t-fest', o.nome);
+    var tViag = getTariffa('t-viag', o.nome);
+    tariffe[o.nome] = { lav: tLav, str: tStr, sab: tSab, fest: tFest, viag: tViag };
+
+    var cLav  = (o.oreLav  || 0) * tLav;
+    var cStr  = (o.oreStr  || 0) * tStr;
+    var cSab  = (o.oreSab  || 0) * tSab;
+    var cFest = (o.oreFest || 0) * tFest;
+    var cViag = (o.oreViag || 0) * tViag;
+    var tot   = cLav + cStr + cSab + cFest + cViag;
+
+    totCLav  += cLav;  totCStr  += cStr;  totCViag += cViag;
+    totOLav  += o.oreLav||0; totOStr += o.oreStr||0; totOViag += o.oreViag||0;
+    var totCSab = (righe.match(/tot-sab/) ? 0 : 0); // placeholder
+
+    righe += '<tr>' +
+      '<td style="font-weight:600">' + esc(o.nome) + '</td>' +
+      '<td style="text-align:right;font-family:var(--mono)">' + fmt(o.oreLav||0) + '</td>' +
+      '<td style="text-align:right;font-family:var(--mono);color:var(--text2)">' + fmtEur(tLav) + '</td>' +
+      '<td style="text-align:right;font-family:var(--mono);color:var(--green)">' + fmtEur(cLav) + '</td>' +
+      '<td style="text-align:right;font-family:var(--mono)">' + fmt(o.oreStr||0) + '</td>' +
+      '<td style="text-align:right;font-family:var(--mono);color:var(--text2)">' + fmtEur(tStr) + '</td>' +
+      '<td style="text-align:right;font-family:var(--mono);color:var(--amber)">' + fmtEur(cStr) + '</td>' +
+      '<td style="text-align:right;font-family:var(--mono)">' + fmt(o.oreSab||0) + '</td>' +
+      '<td style="text-align:right;font-family:var(--mono);color:var(--text2)">' + fmtEur(tSab) + '</td>' +
+      '<td style="text-align:right;font-family:var(--mono);color:var(--amber)">' + fmtEur(cSab) + '</td>' +
+      '<td style="text-align:right;font-family:var(--mono)">' + fmt(o.oreFest||0) + '</td>' +
+      '<td style="text-align:right;font-family:var(--mono);color:var(--text2)">' + fmtEur(tFest) + '</td>' +
+      '<td style="text-align:right;font-family:var(--mono);color:var(--red)">' + fmtEur(cFest) + '</td>' +
+      '<td style="text-align:right;font-family:var(--mono)">' + fmt(o.oreViag||0) + '</td>' +
+      '<td style="text-align:right;font-family:var(--mono);color:var(--text2)">' + fmtEur(tViag) + '</td>' +
+      '<td style="text-align:right;font-family:var(--mono);color:var(--blue)">' + fmtEur(cViag) + '</td>' +
+      '<td style="text-align:right;font-family:var(--mono);font-weight:700;color:var(--red)">' + fmtEur(tot) + '</td>' +
+    '</tr>';
+  });
+
+  var totTot = totCLav + totCStr + totCViag;
+
+  el('tbody-risultato').innerHTML = righe;
+  el('tot-bar').innerHTML =
+    '<div class="tot-item"><div class="tot-label">Costo ordinario</div><div class="tot-val green">' + fmtEur(totCLav) + '</div></div>' +
+    '<div class="tot-item"><div class="tot-label">Costo straordinario</div><div class="tot-val amber">' + fmtEur(totCStr) + '</div></div>' +
+    '<div class="tot-item"><div class="tot-label">Costo viaggio</div><div class="tot-val blue">' + fmtEur(totCViag) + '</div></div>' +
+    '<div class="tot-item" style="margin-left:auto"><div class="tot-label">Totale manodopera</div><div class="tot-val big red">' + fmtEur(totTot) + '</div></div>';
+
+  try { localStorage.setItem('tariffe_v1', JSON.stringify(tariffe)); } catch(e) {}
+  el('step3').style.display = 'block';
+  el('step3').scrollIntoView({ behavior: 'smooth' });
+}
+
+function resetSelezione() {
+  commessaCorrente = null;
+  el('step1').style.display = 'block';
+  el('step2').style.display = 'none';
+  el('step3').style.display = 'none';
+}
+
+function popolaCampiTariffeGenerali(){
+  el('tg-lav').value  = tariffeGenerali.lav  || '';
+  el('tg-str').value  = tariffeGenerali.str  || '';
+  el('tg-sab').value  = tariffeGenerali.sab  || '';
+  el('tg-fest').value = tariffeGenerali.fest || '';
+  el('tg-viag').value = tariffeGenerali.viag || '';
+}
+function salvaTariffeGenerali(){
+  tariffeGenerali = {
+    lav:  parseFloat(el('tg-lav').value)  || 0,
+    str:  parseFloat(el('tg-str').value)  || 0,
+    sab:  parseFloat(el('tg-sab').value)  || 0,
+    fest: parseFloat(el('tg-fest').value) || 0,
+    viag: parseFloat(el('tg-viag').value) || 0
+  };
+  try { localStorage.setItem('tariffe_generali_v1', JSON.stringify(tariffeGenerali)); } catch(e) {}
+
+  // Se una commessa e' gia aperta, applica subito le nuove tariffe generali
+  // a tutti gli operai che non hanno una tariffa specifica salvata
+  if (commessaCorrente && commessaCorrente.operaiMap) {
+    Object.keys(commessaCorrente.operaiMap).forEach(function(nome) {
+      if (!tariffe[nome]) tariffe[nome] = {};
+      var t = tariffe[nome];
+      if (t.lav  == null || t.lav  === '' || t.lav  === 0) t.lav  = tariffeGenerali.lav;
+      if (t.str  == null || t.str  === '' || t.str  === 0) t.str  = tariffeGenerali.str;
+      if (t.sab  == null || t.sab  === '' || t.sab  === 0) t.sab  = tariffeGenerali.sab;
+      if (t.fest == null || t.fest === '' || t.fest === 0) t.fest = tariffeGenerali.fest;
+      if (t.viag == null || t.viag === '' || t.viag === 0) t.viag = tariffeGenerali.viag;
+    });
+    renderTariffe(commessaCorrente.operaiMap);
+  }
+
+  showAlert('Tariffe generali salvate e applicate.');
+}
+
+popolaCampiTariffeGenerali();
+sbProteggi(caricaCommesse);
+</script>
+</body>
+</html>
